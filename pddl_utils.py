@@ -9,6 +9,11 @@ class PDDLNode(Node):
     
     ACTION_NAME = ":action"
     
+    '''True iff C-style syntax is being converted to Lisp-style syntax by the parser.
+    This affects all the getter methods for C-style keywords like :parameters
+    '''
+    C_SYNTAX_REPLACE_TREE = True
+    
     def __init__(self, fname, fn=False):
         '''Create a new node.
         fn states whether this is a function or not - used to differentiate between (sum) and sum.'''
@@ -43,6 +48,24 @@ class PDDLNode(Node):
         assert len(self.children) > 0
         return self.children[0].name
     
+    def seek_c_style(self, path):
+        '''Seek for a C-style path. The first path[:-1] is DOM-style, but the last element is C-style.'''
+        
+        if len(path) > 1:
+            subtree = self.seek(path[:-1])
+            if subtree:
+                return subtree.seek_c_style(path[-1])
+            else:
+                return subtree
+        elif len(path) == 0:
+            return self
+        else:
+            i = self.index_of(self.seek(path[0]))
+            assert len(self.children) > i + 1 # need to be able to access element after path[0]
+            subtree = self.children[i + 1]
+            return subtree
+        
+    
     def get_parameters(self):
         '''Return a list of parameters of this action.
         Only relevant if this is an action node. Return False if this is not an action node.'''
@@ -50,12 +73,19 @@ class PDDLNode(Node):
         if self.name != self.ACTION_NAME:
             return False
         
-        # seek out the index of parameters
-        i = self.index_of(self.seek([":parameters"]))
-        assert len(self.children) > i + 1 #TODO what happens when no parameters?
-        subtree = self.children[i + 1]
-        assert not subtree.name.startswith(":") #TODO what happens when parameters clause is empty?
-        return [subtree.name] + [child.name for child in subtree.children]
+        if self.C_SYNTAX_REPLACE_TREE:
+            subtree = self.seek([":parameters"])
+            if subtree:
+                return [child.name for child in subtree.children]
+            else:
+                return subtree
+        else:
+            subtree = self.seek_c_style([":parameters"])
+            if subtree:
+                assert not subtree.name.startswith(":") #TODO what happens when parameters clause is empty?
+                return [subtree.name] + [child.name for child in subtree.children]
+            else:
+                return subtree
         
     def get_preconditions(self):
         '''Return the preconditions of this action.
@@ -198,6 +228,35 @@ class PDDLParser(LispParser):
         
         tokens = PDDLParser.get_tokens(expr)
         #root = PDDLNode(Node.ROOT_NAME, False)
+        
+        # The PDDL spec is schitzoid about whether to use a Lisp syntax, or a pseudo-C syntax
+        #    Lisp syntax               -        (name-of-expr arg-1 arg-2 ...)
+        #    pseudo-C syntax           -        name-of-expr (arg-1 arg-2 ...)
+        #
+        # PDDL Lisp syntax example:
+        #    PDDL syntax               -        (:predicates <predicate-1> <predicate-2> ...)
+        #
+        # PDDL pseudo-C example:
+        #    PDDL syntax               -        :parameters (<param-1> <param-2> ...)
+        #    expected Lisp syntax      -        (:parameters <param-1> <param-2> ...)
+        #
+        # Because of this retardation, I can't write nice, clean getters for these non-Lisp expressions
+        # I have 2 choices:
+        #    1. remember all the retarded expressions and handle them individually...
+        #    2. change them at the token level into the expected Lisp syntax
+        # 
+        # I'll go for option 2.
+        
+        c_syntax_tokens = set([":parameters", ':precondition', ":effect"])
+        
+        
+        i = 0
+        while i < len(tokens):
+            if tokens[i] in c_syntax_tokens and i < len(tokens) - 1:
+                tokens[i], tokens[i + 1] = tokens[i + 1], tokens[i]
+                i += 2
+            else:
+                i += 1
         
         return PDDLParser._make_lisp_tree_helper(tokens)
     

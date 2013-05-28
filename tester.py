@@ -5,6 +5,7 @@ from utils import get_contents
 
 #from timeit import timeit
 import time
+import os
 
 '''
 This file runs tests on the PDDL parser.
@@ -56,29 +57,10 @@ def profile_tree(fname):
     
     #tree.print_tree()
 
-def benchmark_seek_all():
-    tree = Parser().get_tree(get_contents('samples/gripper-domain.pddl'))
-    
-    print "==> generator:"
-    start = time.time()
-    #for i in xrange(1):
-    tree.seek_all([':action'])
-    print (time.time() - start) #* 1000
-    
-    print "==> list"
-    start = time.time()
-    #for i in xrange(1):
-    tree.seek_all_list([':action'])
-    print (time.time() - start) #* 1000
-   
-   
-
 ###########################################################
 #    Specify constants here:                              #
 
 f_problem = "samples/gripper-problem.pddl"
 f_domain = "samples/gripper-domain.pddl"
-
-profile_tree(f_problem)
-#show_domain(f_domain)
-#benchmark_seek_all()
+profile_tree(f_domain)
+#profile_tree(f_problem)

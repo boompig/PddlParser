@@ -298,8 +298,9 @@ class LispParser(object):
 		
 	@staticmethod
 	def _remove_comments(expr):
-		'''Remove emacs-style comments (in the form ;[;] comments go here).
-		Will not work if newlines are removed before this method is called.'''
+		'''Remove emacs-style comments: 
+			;[;] <comment-word> ...
+		Will not work if newlines are removed before this method is called, since there is no comment-ending character.'''
 		
 		expr = re.sub(";+(.*?)$", "", expr)
 		expr = re.sub(";+(.*?)(\r)?\n", "", expr)
@@ -310,6 +311,43 @@ class LispParser(object):
 		'''Return a list of lisp tokens. Tokens are literals, as well as brackets, and functions/operators.'''
 
 		return LispParser._remove_comments(expr).replace("(", " ( ").replace(")", " ) ").split()
+	
+	@staticmethod
+	def nest_tokens(tokens, depth = 0):
+		'''Return a nested list of tokens, mimicking structure of underlying Lisp.
+		tokens - a list of tokens obtained by calling get_tokens static method.
+		depth - an internal parameter that is part of recursion, used for sanity checking.
+		Throws SyntaxError on badly formed (i.e. non-Lisp) expressions.
+		WARNING: deletes all tokens in given token list (uses it like a stack)'''
+	
+		l = []
+		
+		while len(tokens) > 0:
+			token = tokens.pop(0)
+			#print "[depth=%d] token = %s" % (depth, token)
+			
+			if token == "(":
+				subexpr = LispParser.nest_tokens(tokens, depth + 1)
+				l.append(subexpr)
+			elif token == ")":
+				if depth == 0:
+					raise SyntaxError("there is an extra paren at the end of expr")
+				return l
+			else:
+				l.append(token)
+				
+		if depth > 0:
+			raise SyntaxError("missing matching closing paren at end of expr")
+		elif len(l) == 1:
+			# since any 'true' Lisp expression starts with '(' (including PDDL), algo will trigger recursion on first token
+			# recursion returns a list, and this list will be appended to l, and will be the only element in l
+			# so in the case of PDDL would normally return [[define ... ]], and want to instead return [define ... ]
+			return l[0]
+		else:
+			# conversely if the structure is non-Lispy (expr-1 ...) (expr-2) with no top-level bracket, then above correction is unneeded
+			# will return [[expr-1 ... ], [expr-2 ... ]] for above
+			# also handles base-case of empty token list
+			return l
 	
 	@staticmethod
 	def get_tree(expr):
