@@ -26,7 +26,7 @@ class PDDLNode(Node):
         ''''Return the problem subtree. Return False if no problem subtree found.'''
         
         if self.problem is None:
-            self.problem = self.seek([":problem"])
+            self.problem = self.seek(["problem"])
         
         return self.problem
     
@@ -34,7 +34,7 @@ class PDDLNode(Node):
         '''Return the domain subtree. Return False if not domain subtree found.'''
         
         if self.domain is None:
-            self.domain = self.get_problem().seek([":domain"])
+            self.domain = self.seek([":domain"])
             
         return self.domain
     
@@ -42,9 +42,7 @@ class PDDLNode(Node):
         '''Return the initial state subtree. Return False if initial state subtree not found.'''
         
         if self.init_state is None:
-            self.init_state = self.get_problem().seek([("eval", 0)])
-            # change the name
-            self.init_state.name = ":init-state"
+            self.init_state = self.seek([":init"])
             
         return self.init_state
     
@@ -52,10 +50,7 @@ class PDDLNode(Node):
         '''Return the goal state subtree. Return False if goal state subtree not found.'''
         
         if self.goal is None:
-            #path = (("eval", 2) if self.init_state is None else ("eval", 1))
-            self.goal = self.get_problem().seek([("eval", -1)])
-            # change the name
-            self.goal.name = ":goal"
+            self.goal = self.seek([":goal"])
             
         return self.goal
         
@@ -67,14 +62,41 @@ class PDDLParser(LispParser):
         
     @staticmethod
     def get_tree(expr):
-        '''Return a DOM-like tree structure.'''
+        '''Return a DOM-like tree structure. 
+        No need to create a fictitious root since the root element is define.'''
         
-        tokens = LispParser.get_tokens(expr)
-        root = PDDLNode(Node.ROOT_NAME, False)
+        tokens = PDDLParser.get_tokens(expr)
+        #root = PDDLNode(Node.ROOT_NAME, False)
         
-        while len(tokens) > 0:
-            subtree = LispParser._make_lisp_tree_helper(tokens)
-            if subtree is not None:
-                root.add_child(subtree)
+        return PDDLParser._make_lisp_tree_helper(tokens)
+    
+    @staticmethod
+    def _make_lisp_tree_helper(tokens):    
+        '''Helper to the make_lisp_tree function. This does most of the work.
+        tokens - list of lisp tokens to make the tree out of.'''
         
-        return root
+        token = tokens.pop(0)
+        if token == "(":
+            # consider an empty expression an empty eval exression
+            if tokens[0] == ")":
+                tokens.pop(0)
+                return PDDLNode(Node.EVAL_NAME, True)
+                #return None # a null-child
+            
+            if tokens[0] == "(":
+                # a function call on the stuff inside the next expression
+                root = PDDLNode(Node.EVAL_NAME, True)
+            else:
+                root = PDDLNode(tokens.pop(0), True)
+        
+            while tokens[0] != ")":
+                subtree = PDDLParser._make_lisp_tree_helper(tokens)
+                if subtree is not None:
+                    root.add_child(subtree)
+        
+            tokens.pop(0) # remove closing paren
+            return root
+        elif token == ")":
+            raise SyntaxError("Unexpected closing paren")
+        else:
+            return PDDLNode(token, False)

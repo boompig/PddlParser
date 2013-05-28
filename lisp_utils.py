@@ -108,7 +108,7 @@ class Node(object):
 		The path *should not* include the root element.
 		Path should look like this:
 			["<name-1>", "<name-2>", ("<name-3", index), "<name-4>" ... ]
-		indexing starts at 0. There is support for negative indexing.
+		indexing starts at 0. There is *NO* support for negative indexing.
 		'''
 		
 		if len(path) == 0:
@@ -117,13 +117,8 @@ class Node(object):
 		stop = path[0]
 		if isinstance(stop, tuple):
 			stop, i = stop
+			assert i >= 0
 			j = 0
-			
-			if i < 0:
-				l = reversed(self.children)
-				i = i * -1
-			else:
-				l = self.children
 			
 			for child in l:
 				if child.name == stop and  i == j:
