@@ -77,11 +77,13 @@ class Node(object):
 		else:
 			self.add_child(tree)
 			
-	def seek_all(self, path):
-		'''Return subtrees list if found, [] otherwise.'''
+	def seek_all_list(self, path):
+		'''Return *a list* of the subtrees found.'''
 		
 		if len(path) == 0:
-			return [self]
+			#return [self]
+			#yield self
+			return
 		
 		stop = path[0]
 		results = []
@@ -93,14 +95,49 @@ class Node(object):
 				if child.name == stop and  i == j:
 					results.extend(child.seek_all(path[1:]))
 					return results
+					#for item in child.seek_all(path[1:]):
+					#	yield item
 				elif child.name == stop:
 					j += 1
 		else:
 			for child in self.children:
 				if child.name == stop:
 					results.extend(child.seek_all(path[1:]))
+					#for item in child.seek_all(path[1:]):
+					#	yield item
 						
 		return results
+			
+	def seek_all(self, path):
+		'''Return *a generator* over the subtrees found.'''
+		
+		if len(path) == 0:
+			#return [self]
+			yield self
+			return
+		
+		stop = path[0]
+		#results = []
+		
+		if isinstance(stop, tuple):
+			stop, i = stop
+			j = 0
+			for child in self.children:
+				if child.name == stop and  i == j:
+					#results.extend(child.seek_all(path[1:]))
+					#return results
+					for item in child.seek_all(path[1:]):
+						yield item
+				elif child.name == stop:
+					j += 1
+		else:
+			for child in self.children:
+				if child.name == stop:
+					#results.extend(child.seek_all(path[1:]))
+					for item in child.seek_all(path[1:]):
+						yield item
+						
+		#return results
 		
 	def seek(self, path):
 		'''Return subtree if found, False otherwise.

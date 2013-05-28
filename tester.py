@@ -3,51 +3,82 @@ from pddl_utils import PDDLParser as Parser
 from compare import LispDiff
 from utils import get_contents
 
+#from timeit import timeit
+import time
+
 '''
 This file runs tests on the PDDL parser.
 '''
 
-def show_problem(fname):
-    '''Run the PDDL parser on the problem file. Show the output.'''
+def profile_tree(fname):
+    '''Run the PDDL parser on the given file.
+    Extract and show meaningful information.'''
     
     contents = get_contents(fname)
     parser = Parser()
     tree = parser.get_tree(contents)
-    tree.finalize()
     
-    print "==> whole tree:"
-    tree.print_tree()
+    print "==> tree-type:",
+    t = tree.get_type()
+    print "'%s'" % t
     
-    print "==> problem:"
-    p_tree = tree.get_problem()
-    p_tree.print_tree()
+    print "==> domain: '%s'" %  tree.get_domain()
     
-    print "==> domain:"
-    d_tree = tree.get_domain()
-    d_tree.print_tree()
+    if t == "problem":
+        print "==> problem: '%s'" % tree.get_problem()
     
-    print "==> init state:"
-    i_tree = tree.get_init_state()
-    i_tree.print_tree()
+        print "==> objects:"
+        print tree.get_objects()
+        
+        print "==> init state:"
+        print tree.get_init_state()
+        
+        print "==> goal:"
+        print tree.get_goal()
+        
+    else:
+        print "==> predicates:"
+        print tree.get_predicates()
+        
+        print "==> actions:"
+        for a in tree.get_actions():
+            print "==> action: '%s'" % a.get_action_name()
+            #a.print_tree()
+            
+            print "==> parameters: "
+            print a.get_parameters()
+            
+            print "==> preconditions: "
+            print a.get_preconditions()
+            
+            print "==> effects"
+            print a.get_effects()
     
-    print "==> goal:"
-    g_tree = tree.get_goal()
-    g_tree.print_tree()
+    #tree.print_tree()
+
+def benchmark_seek_all():
+    tree = Parser().get_tree(get_contents('samples/gripper-domain.pddl'))
     
-def show_domain(fname):
-    '''Run the PDDL parser on the domain file. Show the output.'''
+    print "==> generator:"
+    start = time.time()
+    #for i in xrange(1):
+    tree.seek_all([':action'])
+    print (time.time() - start) #* 1000
     
-    contents = get_contents(fname)
-    parser = Parser()
-    tree = parser.get_tree(contents)
-    #tree.finalize()
-    
-    tree.print_tree()
+    print "==> list"
+    start = time.time()
+    #for i in xrange(1):
+    tree.seek_all_list([':action'])
+    print (time.time() - start) #* 1000
+   
+   
 
 ###########################################################
 #    Specify constants here:                              #
 
 f_problem = "samples/gripper-problem.pddl"
 f_domain = "samples/gripper-domain.pddl"
-#show_problem(f_problem)
-show_domain(f_domain)
+
+profile_tree(f_problem)
+#show_domain(f_domain)
+#benchmark_seek_all()
