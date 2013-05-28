@@ -1,28 +1,27 @@
-(:problem 
-	(:domain dom1)
-	(
-		;; initial state
-		(and 
-			(poof? x) 
-			(rhino? y)
-		)
-		;; end init state
-	) 
-	 
-	(
-		;; fluents?
-		
-		;; end fluents
+(define 
+	(problem strips-gripper2)
+	(:domain gripper-strips)
+	(:objects 
+		rooma 
+		roomb 
+		ball1 
+		ball2 
+		left 
+		right
 	)
-	
-	(
-		;; goal
-		(and
-			(floof? y)
-			(jiggly? y)
-			(rhino? x)
-			(jiggled? x)
-		)
-		;; end goal
+	(:init (room rooma)
+		(room roomb)
+		(ball ball1)
+		(ball ball2)
+		(gripper left)
+		(gripper right)
+		(at-robby rooma)
+		(free left)
+		(free right)
+		(at ball1 rooma)
+		(at ball2 rooma)
+	)
+	(:goal 
+		(at ball1 roomb)
 	)
 )
