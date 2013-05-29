@@ -1,5 +1,6 @@
 #from lisp_utils import LispParser
 from pddl_utils import PDDLParser as Parser
+from pddl_utils import PDDLNode as Node
 from compare import LispDiff
 from utils import get_contents
 
@@ -56,6 +57,15 @@ def profile_tree(fname):
             print a.get_effects()
     
     #tree.print_tree()
+    
+def test_lisp_utils():
+    p = Parser()
+    
+    n1 = p.get_tree("(sum 3 5 6)")
+    print n1.is_simple_expr()
+    
+    n2 = p.get_tree("(sum 3 (sum 5 6))")
+    print n2.is_simple_expr()
 
 ###########################################################
 #    Specify constants here:                              #
@@ -63,4 +73,5 @@ def profile_tree(fname):
 f_problem = "samples/gripper-problem.pddl"
 f_domain = "samples/gripper-domain.pddl"
 profile_tree(f_domain)
-#profile_tree(f_problem)
+profile_tree(f_problem)
+#test_lisp_utils()

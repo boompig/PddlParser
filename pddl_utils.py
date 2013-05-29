@@ -42,8 +42,16 @@ class PDDLNode(Node):
         else:        
             return "PDDL Node %s (%s)" % (self.name, self.children[0].name)
         
+    def is_action_node(self):
+        '''Return True iff this is an action node.'''
+        
+        return self.name == self.ACTION_NAME
+        
     def get_action_name(self):
         '''Return the name of this action node. Return False if this is not an action node.'''
+        
+        if not self.is_action_node():
+            return False
         
         assert len(self.children) > 0
         return self.children[0].name
@@ -65,60 +73,75 @@ class PDDLNode(Node):
             subtree = self.children[i + 1]
             return subtree
         
+    def _get_simple_expr_contents(self):
+        '''Return a list of names of the contents of this expression. Used by getters for parameters, etc.
+        Return False if this is not a simple expression.'''
+        
+        if not self.is_simple_expr():
+            return False
+        
+        if self.C_SYNTAX_REPLACE_TREE:
+            return [child.name for child in self.children]
+        else:
+            return [self.name] + [child.name for child in self.children]
     
     def get_parameters(self):
         '''Return a list of parameters of this action.
         Only relevant if this is an action node. Return False if this is not an action node.'''
         
-        if self.name != self.ACTION_NAME:
+        if not self.is_action_node():
             return False
         
         if self.C_SYNTAX_REPLACE_TREE:
             subtree = self.seek([":parameters"])
-            if subtree:
-                return [child.name for child in subtree.children]
-            else:
-                return subtree
         else:
             subtree = self.seek_c_style([":parameters"])
-            if subtree:
-                assert not subtree.name.startswith(":") #TODO what happens when parameters clause is empty?
-                return [subtree.name] + [child.name for child in subtree.children]
-            else:
-                return subtree
+            
+        if subtree:
+            return subtree._get_simple_expr_contents()
+        else:
+            return subtree
         
     def get_preconditions(self):
         '''Return the preconditions of this action.
         Only relevant if this is an action node. Return False if this is not an action node.'''
         
-        if self.name != self.ACTION_NAME:
+        if not self.is_action_node():
             return False
         
-        # seek out the index of precondition
-        i = self.index_of(self.seek([":precondition"]))
-        assert len(self.children) > i + 1
-        subtree = self.children[i + 1]
-        assert not subtree.name.startswith(":") #TODO what happens when precondition clause is empty?
+        if self.C_SYNTAX_REPLACE_TREE:
+            subtree = self.seek([":precondition"])
+        else:
+            subtree = self.seek_c_style([":precondition"])
+        
         return subtree
     
     def get_effects(self):
         '''Return the effects of this action.
         Only relevant if this is an action node. Return False if this is not an action node.'''
         
-        # seek out the index of effect
-        i = self.index_of(self.seek([":effect"]))
-        assert len(self.children) > i + 1 #TODO what happens when empty effect clause?
-        subtree = self.children[i + 1]
-        assert not subtree.name.startswith(":") #TODO what happens when empty clause is empty?
+        if not self.is_action_node():
+            return False
+        
+        if self.C_SYNTAX_REPLACE_TREE:
+            subtree = self.seek([":effect"])
+        else:
+            subtree = self.seek_c_style([":effect"])
+        
         return subtree
+    
+    def get_objects(self):
+        '''Return a list of objects in this problem. Return False if this is a domain tree.'''
+        
+        if self.is_domain():
+            return False
+        
+        return [child.name for child in self.seek([":objects"]).children]
         
     def get_predicates(self):
         '''Return the predicates subtree. Return False if this is a problem file.'''
         
-        if self._type is None:
-            self._classify()
-            
-        if self._type == PDDLNode.PROBLEM:
+        if self.is_problem():
             return False
         
         return self.seek([":predicates"])
@@ -126,13 +149,23 @@ class PDDLNode(Node):
     def get_actions(self):
         '''Return a generator over the action subtrees. Return False if this is a problem file.'''
         
-        if self._type is None:
-            self._classify()
-            
-        if self._type == PDDLNode.PROBLEM:
+        if self.is_problem():
             return False
         
         return self.seek_all([self.ACTION_NAME])
+    
+    def is_problem(self):
+        '''Return True iff this tree represents a problem file.'''
+        
+        if self._type is None:
+            self._classify()
+            
+        return self._type == self.PROBLEM
+            
+    def is_domain(self):
+        '''Return True iff this tree represents a domain file.'''
+        
+        return not self.is_problem()
         
     def get_type(self):
         '''Return the string - whether this is 'problem' or 'domain' file.'''
@@ -161,13 +194,11 @@ class PDDLNode(Node):
         
     def get_problem(self):
         ''''Return the name of the problem. Return False if no problem subtree found.
-        Return False if problem subtree asked of domain tree'''
+        Return False if problem subtree asked of does not represent a problem file.'''
         #Raise SyntaxError if the tree is from a Domain file
         
-        
-        if self._type is not None and self._type == PDDLNode.DOMAIN:
+        if not self.is_problem():
             return False
-        #    raise SyntaxError("Domain file's PDDL tree has no associated problem")
         
         if self.problem is None:
             self.problem = self.seek(["problem"]).children[0].name
@@ -175,29 +206,15 @@ class PDDLNode(Node):
         return self.problem
     
     def get_domain(self):
-        '''Return the name of the domain. Return False if the domain subtree is not found.'''
-        
-        if self._type is None:
-            self._classify()
+        '''Return the name of the domain. Return False if no subtree found.'''
         
         if self.domain is None:
-            if self._type == PDDLNode.DOMAIN:
+            if self.is_domain():
                 self.domain = self.seek(["domain"]).children[0].name
             else:
                 self.domain = self.seek([":domain"]).children[0].name
             
         return self.domain
-    
-    def get_objects(self):
-        '''Return a list of objects in this problem. Return False if this is a domain tree.'''
-        
-        if self._type is None:
-            self._classify()
-            
-        if self._type == PDDLNode.DOMAIN:
-            return False
-        
-        return [child.name for child in self.seek([":objects"]).children]
     
     def get_init_state(self):
         '''Return the initial state subtree. Return False if initial state subtree not found.'''

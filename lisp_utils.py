@@ -44,6 +44,14 @@ class Node(object):
 		'''Return True iff the current node is the root of the tree.'''
 		
 		return self.root
+	
+	def is_simple_expr(self):
+		'''Return True iff this is a simple expression.
+		Simple expression has no expression-children
+		(sum 3 2 4) is simple
+		(sum 3 (sum 2 4)) is not simple.'''
+		
+		return all([len(child.children) == 0 for child in self.children])
 		
 	def add_child(self, node, index=None):
 		'''Add the given node (or subtree) as a child of the current tree (node).
