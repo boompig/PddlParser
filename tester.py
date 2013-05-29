@@ -21,12 +21,11 @@ def profile_tree(fname):
     tree = parser.get_tree(contents)
     
     print "==> tree-type:",
-    t = tree.get_type()
-    print "'%s'" % t
+    print "'%s'" % tree.get_type()
     
     print "==> domain: '%s'" %  tree.get_domain()
     
-    if t == "problem":
+    if tree.is_problem():
         print "==> problem: '%s'" % tree.get_problem()
     
         print "==> objects:"
@@ -39,11 +38,22 @@ def profile_tree(fname):
         print tree.get_goal()
         
     else:
+        if tree.seek([":requirements"]):
+            print "==> requirements:"
+            print tree.seek([":requirements"])
+            
+        if tree.seek([":types"]):
+            print "==> types:"
+            print tree.seek([":types"])
+        
         print "==> predicates:"
         print tree.get_predicates()
         
         print "==> actions:"
+        i = 0
+        
         for a in tree.get_actions():
+            i += 1
             print "==> action: '%s'" % a.get_action_name()
             #a.print_tree()
             
@@ -55,6 +65,9 @@ def profile_tree(fname):
             
             print "==> effects"
             print a.get_effects()
+            
+        if i == 0:
+            print "[ no actions ]"
     
     #tree.print_tree()
     
@@ -71,7 +84,7 @@ def test_lisp_utils():
 #    Specify constants here:                              #
 
 f_problem = "samples/gripper-problem.pddl"
-f_domain = "samples/gripper-domain.pddl"
+f_domain = "samples/logistics-adl-domain.pddl"
 profile_tree(f_domain)
-profile_tree(f_problem)
+#profile_tree(f_problem)
 #test_lisp_utils()

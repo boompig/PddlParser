@@ -274,8 +274,29 @@ class PDDLParser(LispParser):
                 i += 2
             else:
                 i += 1
+                
+        nested_list = PDDLParser.nest_tokens(tokens)
+        #print nested_list
+        return PDDLParser.tree_from_nested_token_list(nested_list)
         
-        return PDDLParser._make_lisp_tree_helper(tokens)
+        #return PDDLParser._make_lisp_tree_helper(tokens)
+    
+    @staticmethod
+    def tree_from_nested_token_list(tokens):
+        
+        if len(tokens) == 0:
+            return PDDLNode(Node.EVAL_NAME, True)
+        
+        node = PDDLNode(tokens[0], True)
+        
+        for arg in tokens[1:]:
+            if isinstance(arg, list):
+                subtree = PDDLParser.tree_from_nested_token_list(arg)
+                node.add_child(subtree)
+            else:
+                node.add_child(PDDLNode(arg, False))
+                
+        return node
     
     @staticmethod
     def _make_lisp_tree_helper(tokens):    
