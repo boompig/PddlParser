@@ -19,13 +19,13 @@ About
 		python tree_hanger.py domain_file problem_file transator_output_file [problem_number].
 	* does the modification of the relevant files in memory using the Lisp-DOM data structure from lisp_utils.py.
 	
-### compare.py
+### compare.py:
 a lisp-specific diff engine
 	* ignores whitespace.
 	* pretty good at isolating the issues compared to commercial diff engines.
 can be invoked from the command line like this:
 	* python compare.py baseline_file generated_file.
 
-### tester.py
+### tester.py:
 	* does the testing...
 
