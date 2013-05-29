@@ -26,6 +26,6 @@ a lisp-specific diff engine
 can be invoked from the command line like this:
 	* python compare.py baseline_file generated_file.
 
-tester.py
+### tester.py
 	* does the testing...
 
