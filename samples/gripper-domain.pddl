@@ -1,4 +1,5 @@
-(define (domain gripper-strips)
+(define 
+	(domain gripper-strips)
 	(:predicates 
 		(room ?r) 
 		(ball ?b) 
