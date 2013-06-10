@@ -1,0 +1,31 @@
+# Here is where I will describe the DOM spec:
+#	DOM4 working draft
+
+# Resource:
+# http://www.w3.org/TR/domcore/
+
+# The DOM is a tree
+#
+#	each element in the tree:
+#		has a parent - another object or null
+#		has children - list of zero or more objects
+#
+# 	root - elem without parent
+#
+#	A is a descendant of B <=> (A is child of B) or (A is child of object C AND C is descendant of B)
+#	
+#	A is ancestor of B <=> B is descendant of A
+#
+#	A is sibling of B <=> (parent(A) == parent(B)) AND parent(A) != null
+#
+#	the DOM tree has a *tree order*
+#		A can preceed or follow B in the tree order
+#
+#	first and last children are well-defined
+#		children have ordering
+#
+#	previous and next sibling are well-defined
+#		because siblings (children of their common parent) have ordering
+#
+#	index of A is its number of preceeding siblings
+#		i.e. traditional array index

@@ -235,8 +235,52 @@ class PDDLNode(Node):
 class PDDLParser(LispParser):
     
     def __init__(self):
+        '''Create a new parser. Identical to LispParser constructor.'''
         
         LispParser.__init__(self)
+        
+    def tree_to_dict(self, tree):
+        '''Turn the tree into a dictionary. Fixes some issues with the tree:
+            * creates an :actions supernode
+        '''
+        
+        d = {}
+        
+        for child in tree.children:
+            if child.name in d:
+                d[child.name] += 1
+            else:
+                d[child.name] = 1
+                
+        d.clear()
+        
+        # now create *super-nodes* neeeeooooooo
+        supernodes = set([key for key in d.iterkeys() if d[key] > 1])
+        #print supernodes
+        
+        for child in tree.children:
+            if child.name in supernodes:
+                if child.name not in d:
+                    d[child.name] = []
+                d[child.name].append(self.tree_to_dict(child))
+            else:
+                d[child.name] = self.tree_to_dict(child)
+        
+        return {tree.name : d}
+        
+        # this creates 'actions' supernode
+#         for node_name in supernodes:
+#             name = (node_name if node_name[-1] == "s" else node_name + "s") 
+#             
+#             node = PDDLNode(name, True)
+#             tree.add_child(node)
+#             
+#             
+#             for subtree in tree.seek_all([node_name], True):
+#                 node.add_child(subtree)
+            
+        #tree.print_tree()
+        #print tree
         
     @staticmethod
     def get_tree(expr):
@@ -264,8 +308,8 @@ class PDDLParser(LispParser):
         # 
         # I'll go for option 2.
         
-        c_syntax_tokens = set([":parameters", ':precondition', ":effect"])
         
+        c_syntax_tokens = set([":parameters", ':precondition', ":effect"])
         
         i = 0
         while i < len(tokens):
@@ -276,10 +320,21 @@ class PDDLParser(LispParser):
                 i += 1
                 
         nested_list = PDDLParser.nest_tokens(tokens)
-        #print nested_list
-        return PDDLParser.tree_from_nested_token_list(nested_list)
         
-        #return PDDLParser._make_lisp_tree_helper(tokens)
+        # The PDDL spec also doesn't handle nested typing very well
+        #    Nested typing syntax      -         (:types <type-11> ... <type-1n> - <parent-type-1>\n<type-21> ... <type-2m> - <parent-type-2> ... )
+        #
+        # This is idiotic, because this is the *only* part of the PDDL spec that is separated by newlines.
+        # Again, I will rewrite the tree, but this time at the tree level.
+        
+        tree = PDDLParser.tree_from_nested_token_list(nested_list)
+        #tree.print_tree()
+        
+        #tree.seek([":types"]).print_tree()
+        
+        #tree.seek(["define", ":types"]).print_tree()
+        
+        return tree
     
     @staticmethod
     def tree_from_nested_token_list(tokens):

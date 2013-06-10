@@ -1,0 +1,12 @@
+STEP 1:
+	* read what Christian and Nathan sent me
+	* STOP WRITING CODE - YOU'RE GOING INSANE
+	
+STEP 2:
+	* figure out what features specifically are needed
+	* write those features
+
+STEP 3:
+	* add features that you want
+	* fix badly written code (some inheritence, etc.)
+	* create good documentation

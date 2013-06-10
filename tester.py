@@ -2,7 +2,7 @@
 from pddl_utils import PDDLParser as Parser
 from pddl_utils import PDDLNode as Node
 from compare import LispDiff
-from utils import get_contents
+from utils import *
 
 #from timeit import timeit
 import time
@@ -71,20 +71,42 @@ def profile_tree(fname):
     
     #tree.print_tree()
     
-def test_lisp_utils():
+def test_lisp_utils(fname):
     p = Parser()
+    d = {}
     
-    n1 = p.get_tree("(sum 3 5 6)")
-    print n1.is_simple_expr()
+    contents = get_contents(fname)
     
-    n2 = p.get_tree("(sum 3 (sum 5 6))")
-    print n2.is_simple_expr()
+    tokens = p.get_tokens(contents)
+    nl = p.nest_tokens(tokens)
+    
+    #print nl
+    
+    #d = p.get_pseudo_json(nl)
+    #print d
+    #
+    #print_nested_dict(d)#["types"]
+    
+    tree = p.get_tree(contents)
+    #tree.print_tree()
+    d = p.tree_to_dict(tree)
+    print_nested_dict(d)
+    #print d
+    
+    return d
 
-###########################################################
-#    Specify constants here:                              #
-
-f_problem = "samples/gripper-problem.pddl"
-f_domain = "samples/logistics-adl-domain.pddl"
-profile_tree(f_domain)
-#profile_tree(f_problem)
-#test_lisp_utils()
+if __name__ == "__main__":
+    ###########################################################
+    #    Specify constants here:                              #
+    
+    f_problem = "samples/gripper-problem.pddl"
+    #f_domain = "samples/logistics-adl-domain.pddl"
+    f_domain = "samples/gripper-domain.pddl"
+    
+    f_other = "samples/storage-nested-typing-domain.pddl"
+    
+    #profile_tree(f_other)
+    
+    #test_lisp_utils(f_problem)
+    d = test_lisp_utils(f_other)
+    #print_nested_dict(d)
