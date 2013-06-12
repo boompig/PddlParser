@@ -81,7 +81,11 @@ def test_lisp_utils(fname):
 #     nl = p.nest_tokens(tokens)
     
     tree = p.get_tree(contents)
-    #print tree.to_lisp()
+#     tree.print_tree()
+    tree.coerce_typed_expr()
+    tree.print_tree()
+    
+#     print tree.to_lisp()
 #     tree.print_tree()
 
     
@@ -93,13 +97,13 @@ if __name__ == "__main__":
     #    Specify constants here:                              #
     
     f_problem = "samples/gripper-problem.pddl"
-    #f_domain = "samples/logistics-adl-domain.pddl"
-#     f_domain = "samples/gripper-domain.pddl"
     
-    f_other = "samples/storage-nested-typing-domain.pddl"
+#     f_domain = "samples/logistics-adl-domain.pddl"
+#     f_domain = "samples/gripper-domain.pddl"
+    f_domain = "samples/storage-nested-typing-domain.pddl"
     
     #profile_tree(f_other)
     
     #test_lisp_utils(f_problem)
-    d = test_lisp_utils(f_other)
+    d = test_lisp_utils(f_domain)
     #print_nested_dict(d)

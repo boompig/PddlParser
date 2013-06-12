@@ -235,8 +235,59 @@ class PDDLNode(LispNode):
             self.goal = self.seek([":goal"])
             
         return self.goal
+    
+    def to_pddl(self):
+        '''Convert this problem back to pddl. This is slightly different than to_lisp because have to switch back the c-syntax and dash-syntax.'''
         
+        c_syntax_tokens = set([":parameters", ':precondition', ":effect"])
+        
+        if self.name == ":types":
+            l = []
+            
+            for type_tree in self.children:
+                s = " ".join([subtype.name for subtype in type_tree.children]) + " - " + type_tree.name 
+                l.append(s)
+                
+            return "(%s)" % " ".join(l)
+#         elif self.name in c_syntax_tokens:
+#             return #TODO
+        else:
+            return self.to_lisp()
+        
+    def coerce_typed_expr(self):
+        '''This is a helper method to creating a well-formed tree.
+        Suppose we have an expression of the form
+            ([:keyword]? type-1.1 ... type-1.n - super-1 ... type-m.1 ... type-m.j - super-m)
+        Turn this into
+            (:keyword (super-1 type-1.1 ... type-1.n) ... (super-m type-m.1 ... type-m.j))
+        '''
+        
+        if "-" not in [c.name for c in self.children]:
+            for c in self.children:
+                c.coerce_typed_expr()
+        else:
+            c = self.pop_children()
+                
+            sep = 0
+            i = 0
+            
+            while i < len(c):
+                if c[i].name == "-":
+                    subtree = c[i + 1] # the supertype
+                    subtree.fn = True
+                    
+                    for subtype in c[sep : i]:
+                        subtree.add_child(subtype)
+                        
+                    self.add_child(subtree)
+                    sep = i + 2
+                    i += 2
+                else:
+                    i += 1
+            
 class PDDLParser(LispParser):
+    
+    c_syntax_tokens = set([":parameters", ':precondition', ":effect"])
     
     def __init__(self):
         '''Create a new parser. Identical to LispParser constructor.'''
@@ -292,7 +343,7 @@ class PDDLParser(LispParser):
         No need to create a fictitious root since the root element is define.'''
         
         tokens = PDDLParser.get_tokens(expr)
-        #root = PDDLNode(Node.ROOT_NAME, False)
+        nested_list = PDDLParser.nest_tokens(tokens)
         
         # The PDDL spec is schitzoid about whether to use a Lisp syntax, or a pseudo-C syntax
         #    Lisp syntax               -        (name-of-expr arg-1 arg-2 ...)
@@ -306,24 +357,11 @@ class PDDLParser(LispParser):
         #    expected Lisp syntax      -        (:parameters <param-1> <param-2> ...)
         #
         # Because of this retardation, I can't write nice, clean getters for these non-Lisp expressions
-        # I have 2 choices:
+        # I have 3 choices:
         #    1. remember all the retarded expressions and handle them individually...
         #    2. change them at the token level into the expected Lisp syntax
         # 
         # I'll go for option 2.
-        
-        
-        c_syntax_tokens = set([":parameters", ':precondition', ":effect"])
-        
-        i = 0
-        while i < len(tokens):
-            if tokens[i] in c_syntax_tokens and i < len(tokens) - 1:
-                tokens[i], tokens[i + 1] = tokens[i + 1], tokens[i]
-                i += 2
-            else:
-                i += 1
-                
-        nested_list = PDDLParser.nest_tokens(tokens)
         
         # The typing system in PDDL is also mentally handicapped. It uses dash-syntax.
         #    Lisp syntax                -         (:types (super-type-1 sub-type-1.1 sub-type-1.2 ...) ... (super-type-j sub-type-j.1 sub-type-j.2 ...))
@@ -334,30 +372,48 @@ class PDDLParser(LispParser):
         
         tree = PDDLParser.tree_from_nested_token_list(nested_list)
         
-        if ":types" in tree:
-            type_tree = tree[":types"]
-            print type_tree.to_lisp()
-            c = type_tree.pop_children()
+        if ":action" in tree:
+            action_trees = tree[":action"]
             
-            sep = 0
-            i = 0
-            
-            while i < len(c):
-                if c[i].name == "-":
-                    subtree = c[i + 1]
-                    subtree.fn = True
-                    
-                    for subtype in c[sep : i]:
-                        subtree.add_child(subtype)
+            if not isinstance(action_trees, list):
+                action_tree = action_trees
+            else:
+                for action_tree in action_trees:
+                    for v in PDDLParser.c_syntax_tokens:
+                        t1 = action_tree[v]
+                        t2 = t1.next_sibling()
                         
-                    type_tree.add_child(subtree)
-                    sep = i + 2
-                    i += 2
-                else:
-                    i += 1
-                    
-            print type_tree.to_lisp()
+                        if v == ":parameters":
+                            c = t2.pop_children()
+                            t1.add_child(t2)
+                            for item in c:
+                                t1.add_child(item)
+                        else:
+                            t1.add_child(t2)
+                        t1.parent.remove_child(t2)
         
+        if False:
+            if ":types" in tree:
+                type_tree = tree[":types"]
+                c = type_tree.pop_children()
+                
+                sep = 0
+                i = 0
+                
+                while i < len(c):
+                    if c[i].name == "-":
+                        subtree = c[i + 1]
+                        subtree.fn = True
+                        
+                        for subtype in c[sep : i]:
+                            subtree.add_child(subtype)
+                            
+                        type_tree.add_child(subtree)
+                        sep = i + 2
+                        i += 2
+                    else:
+                        i += 1
+                    
         return tree
     
     @staticmethod

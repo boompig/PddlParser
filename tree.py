@@ -39,6 +39,15 @@ class Node(object):
         child.parent = self
         self.children.append(child)
         
+    def remove_child(self, child):
+        '''Remove the given child from the list of children.'''
+        
+        if self.is_parent_of(child):
+            i = [c.hash for c in self.children].index(child.hash)
+            self.children.pop(i)
+        else:
+            raise ValueError("list.remove(child): child not in list")
+        
     def pop_children(self):
         '''Remove all children. Return the child list.'''
         
