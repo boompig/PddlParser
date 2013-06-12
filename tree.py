@@ -1,5 +1,7 @@
-# Written by Daniel Kats
-# May 30, 2013
+################################
+#    Written by Daniel Kats    #
+#    May 30, 2013              #
+################################
 
 import uuid
 
@@ -36,6 +38,13 @@ class Node(object):
         
         child.parent = self
         self.children.append(child)
+        
+    def pop_children(self):
+        '''Remove all children. Return the child list.'''
+        
+        c = self.children
+        self.children = []
+        return c
         
     def is_root(self):
         '''Return True iff this node is the root of the tree.'''
@@ -121,8 +130,31 @@ class Node(object):
     
         for child in self.children:
             child.print_tree(indent + 1)
+            
+    def __getitem__(self, item):
+        '''Allow for indexing of tree.'''
         
-if __name__ == "__main__":
+        r = []
+        
+        for child in self.children:
+            if child.name == item:
+                r.append(child)
+                
+        if len(r) == 0:
+            raise KeyError(item)
+        elif len(r) == 1:
+            return r[0]
+        else:
+            return r
+        
+    def __contains__(self, item):
+        '''An aid to indexing of tree.'''
+        
+        return item in [c.name for c in self.children]
+        
+def _test_tree():
+    '''Some very basic testing'''
+    
     n = Node("root")
     n.add_child(Node("sum"))
     n.first_child().add_child(Node("1"))
@@ -139,4 +171,7 @@ if __name__ == "__main__":
     
     sum_node = product_node.prev_sibling()
     sum_node.print_tree()
+        
+if __name__ == "__main__":
+    _test_tree()
     

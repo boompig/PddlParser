@@ -1,6 +1,6 @@
-from lisp_utils import Node, LispParser
+from lisp_utils import LispNode, LispParser
 
-class PDDLNode(Node):
+class PDDLNode(LispNode):
     '''A Node in a PDDL tree, which is has a Lisp-y syntax.'''
     
     ''' There are two types of PDDL files.'''
@@ -19,7 +19,7 @@ class PDDLNode(Node):
         fn states whether this is a function or not - used to differentiate between (sum) and sum.'''
         
         # call to super
-        Node.__init__(self, fname, fn)
+        LispNode.__init__(self, fname, fn)
         
         # lazy evaluation
         self.problem = None
@@ -33,6 +33,10 @@ class PDDLNode(Node):
         
         return self.to_lisp()
         #return self.to_light_str()
+        
+    def contents(self):
+        return [c.to_lisp() for c in self.children]
+#         return self.children
         
     def to_light_str(self):
         '''Return an 'easy-on the-eyes rep.'''
@@ -321,18 +325,38 @@ class PDDLParser(LispParser):
                 
         nested_list = PDDLParser.nest_tokens(tokens)
         
-        # The PDDL spec also doesn't handle nested typing very well
-        #    Nested typing syntax      -         (:types <type-11> ... <type-1n> - <parent-type-1>\n<type-21> ... <type-2m> - <parent-type-2> ... )
+        # The typing system in PDDL is also mentally handicapped. It uses dash-syntax.
+        #    Lisp syntax                -         (:types (super-type-1 sub-type-1.1 sub-type-1.2 ...) ... (super-type-j sub-type-j.1 sub-type-j.2 ...))
+        #    Dash syntax                -        (:types sub-type-1.1 ... sub-type-1.n - super-type-1 sub-type-2.1 ... )
         #
-        # This is idiotic, because this is the *only* part of the PDDL spec that is separated by newlines.
-        # Again, I will rewrite the tree, but this time at the tree level.
+        # The dash syntax seperates sub-types from super-types using a dash, and without grouping expressions together with brackets
+        # I will remedy this situation, but this time at the tree level
         
         tree = PDDLParser.tree_from_nested_token_list(nested_list)
-        #tree.print_tree()
         
-        #tree.seek([":types"]).print_tree()
-        
-        #tree.seek(["define", ":types"]).print_tree()
+        if ":types" in tree:
+            type_tree = tree[":types"]
+            print type_tree.to_lisp()
+            c = type_tree.pop_children()
+            
+            sep = 0
+            i = 0
+            
+            while i < len(c):
+                if c[i].name == "-":
+                    subtree = c[i + 1]
+                    subtree.fn = True
+                    
+                    for subtype in c[sep : i]:
+                        subtree.add_child(subtype)
+                        
+                    type_tree.add_child(subtree)
+                    sep = i + 2
+                    i += 2
+                else:
+                    i += 1
+                    
+            print type_tree.to_lisp()
         
         return tree
     

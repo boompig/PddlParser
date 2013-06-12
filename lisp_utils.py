@@ -460,8 +460,26 @@ class LispParser(object):
 		else:
 			return LispNode(token, False)
 		
-if __name__ == "__main__":
+def _test_tree():
+	'''Some very basic testing'''
+	
 	expr = "(sum 3 2)"
 	p = LispParser()
 	tree = p.get_tree(expr)
 	tree.print_tree()
+		
+if __name__ == "__main__":
+	from sys import argv
+	# get command-line args
+	
+	if len(argv) < 2:
+		print "Usage: [python] %s [ -t ] expr " % argv[0]
+		exit(1)
+	else:
+		if "-t" in argv:
+			argv.remove("-t")
+		
+		expr = argv[1]
+		p = LispParser()
+		tree = p.get_tree(expr)
+		tree.print_tree()

@@ -77,21 +77,14 @@ def test_lisp_utils(fname):
     
     contents = get_contents(fname)
     
-    tokens = p.get_tokens(contents)
-    nl = p.nest_tokens(tokens)
-    
-    #print nl
-    
-    #d = p.get_pseudo_json(nl)
-    #print d
-    #
-    #print_nested_dict(d)#["types"]
+#     tokens = p.get_tokens(contents)
+#     nl = p.nest_tokens(tokens)
     
     tree = p.get_tree(contents)
-    #tree.print_tree()
-    d = p.tree_to_dict(tree)
-    print_nested_dict(d)
-    #print d
+    #print tree.to_lisp()
+#     tree.print_tree()
+
+    
     
     return d
 
@@ -101,7 +94,7 @@ if __name__ == "__main__":
     
     f_problem = "samples/gripper-problem.pddl"
     #f_domain = "samples/logistics-adl-domain.pddl"
-    f_domain = "samples/gripper-domain.pddl"
+#     f_domain = "samples/gripper-domain.pddl"
     
     f_other = "samples/storage-nested-typing-domain.pddl"
     
