@@ -23,9 +23,6 @@ class PDDLNode(LispNode):
         
         # lazy evaluation
         self.problem = None
-        self.domain = None
-        self.init_state = None
-        self.goal = None
         self._type = None
         
     def __str__(self):
@@ -33,6 +30,23 @@ class PDDLNode(LispNode):
         
         return self.to_lisp()
         #return self.to_light_str()
+        
+    def get_types(self):
+        '''Return a set of the unique type names.
+        Return False if this is not the root node.'''
+        
+        if not self.is_root():
+            return False
+        
+        type_tree = self[":types"]
+        s = set([])
+        
+        for c in type_tree.children:
+            s.add(c.name)
+            for child in c.children:
+                s.add(child.name)
+                
+        return s
         
     def contents(self):
         return [c.to_lisp() for c in self.children]
@@ -97,7 +111,7 @@ class PDDLNode(LispNode):
             return False
         
         if self.C_SYNTAX_REPLACE_TREE:
-            subtree = self.seek([":parameters"])
+            subtree = self[":parameters"]
         else:
             subtree = self.seek_c_style([":parameters"])
             
@@ -114,7 +128,7 @@ class PDDLNode(LispNode):
             return False
         
         if self.C_SYNTAX_REPLACE_TREE:
-            subtree = self.seek([":precondition"])
+            subtree = self[":precondition"]
         else:
             subtree = self.seek_c_style([":precondition"])
         
@@ -148,7 +162,7 @@ class PDDLNode(LispNode):
         if self.is_problem():
             return False
         
-        return self.seek([":predicates"])
+        return self[":predicates"]
         
     def get_actions(self):
         '''Return a generator over the action subtrees. Return False if this is a problem file.'''
@@ -204,37 +218,25 @@ class PDDLNode(LispNode):
         if not self.is_problem():
             return False
         
-        if self.problem is None:
-            self.problem = self.seek(["problem"]).children[0].name
-        
-        return self.problem
+        return self["problem"].children[0].name
     
     def get_domain(self):
         '''Return the name of the domain. Return False if no subtree found.'''
         
-        if self.domain is None:
-            if self.is_domain():
-                self.domain = self.seek(["domain"]).children[0].name
-            else:
-                self.domain = self.seek([":domain"]).children[0].name
-            
-        return self.domain
+        if self.is_domain():
+            return self.seek["domain"].children[0].name
+        else:
+            return self.seek[":domain"].children[0].name
     
     def get_init_state(self):
         '''Return the initial state subtree. Return False if initial state subtree not found.'''
         
-        if self.init_state is None:
-            self.init_state = self.seek([":init"])
-            
-        return self.init_state
+        return self[":init"]
     
     def get_goal(self):
         '''Return the goal state subtree. Return False if goal state subtree not found.'''
         
-        if self.goal is None:
-            self.goal = self.seek([":goal"])
-            
-        return self.goal
+        return self[":goal"]
     
     def to_pddl(self):
         '''Convert this problem back to pddl. This is slightly different than to_lisp because have to switch back the c-syntax and dash-syntax.'''
@@ -381,10 +383,12 @@ class PDDLParser(LispParser):
                 for action_tree in action_trees:
                     for v in PDDLParser.c_syntax_tokens:
                         t1 = action_tree[v]
+                        t1.fn = True
                         t2 = t1.next_sibling()
                         
                         if v == ":parameters":
                             c = t2.pop_children()
+                            t2.fn = False
                             t1.add_child(t2)
                             for item in c:
                                 t1.add_child(item)

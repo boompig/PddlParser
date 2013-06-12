@@ -87,10 +87,7 @@ def test_lisp_utils(fname):
     
 #     print tree.to_lisp()
 #     tree.print_tree()
-
-    
-    
-    return d
+    return tree
 
 if __name__ == "__main__":
     ###########################################################
@@ -105,5 +102,5 @@ if __name__ == "__main__":
     #profile_tree(f_other)
     
     #test_lisp_utils(f_problem)
-    d = test_lisp_utils(f_domain)
+    tree = test_lisp_utils(f_domain)
     #print_nested_dict(d)
