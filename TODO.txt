@@ -10,3 +10,11 @@ STEP 3:
 	* add features that you want
 	* fix badly written code (some inheritence, etc.)
 	* create good documentation
+
+STEP 4:
+	* remove all mention of private research projects
+	* remove all mention of private comments
+
+STEP 5:
+	* release the code to the ICAPS community
+	* Profit!
